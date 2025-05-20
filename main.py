@@ -1,5 +1,7 @@
 # Step 1: Import libraries
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Step 2: Load data (show raw columns and first few rows)
 file_path = 'Paper_May25.xlsx'
