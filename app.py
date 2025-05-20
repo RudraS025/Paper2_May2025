@@ -7,7 +7,7 @@ import tensorflow as tf
 app = Flask(__name__)
 
 # Load model and scaler
-model = tf.keras.models.load_model('my_model.h5')
+model = tf.keras.models.load_model('my_model.h5', compile=False)
 scaler = joblib.load('scaler.save')
 
 # List of feature names in the correct order
