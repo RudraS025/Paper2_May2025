@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from xgboost import XGBRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import numpy as np
 import joblib
@@ -20,10 +20,10 @@ y = df[TARGET_COL]
 # Split into train and test sets (80% train, 20% test)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Build pipeline: scaling + XGBoost
+# Build pipeline: scaling + RandomForest
 pipeline = Pipeline([
     ('scaler', StandardScaler()),
-    ('xgb', XGBRegressor(n_estimators=100, random_state=42))
+    ('rf', RandomForestRegressor(n_estimators=100, random_state=42))
 ])
 
 # Train the pipeline
@@ -50,8 +50,8 @@ results.to_excel('OCC_FOB_predictions.xlsx', index=False)
 print('Predictions saved to OCC_FOB_predictions.xlsx')
 
 # Save the pipeline
-joblib.dump(pipeline, 'xgb_pipeline.save')
-print('Pipeline saved as xgb_pipeline.save')
+joblib.dump(pipeline, 'rf_pipeline.save')
+print('Pipeline saved as rf_pipeline.save')
 
 # --- Inference on New Data ---
 # Load new data (replace 'NewData.xlsx' with your actual file name)

@@ -6,7 +6,7 @@ import numpy as np
 app = Flask(__name__)
 
 # Load pipeline
-pipeline = joblib.load('xgb_pipeline.save')
+pipeline = joblib.load('rf_pipeline.save')
 
 # List of feature names in the correct order
 FEATURES = [
