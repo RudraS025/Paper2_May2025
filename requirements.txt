@@ -3,7 +3,8 @@ gunicorn
 pandas
 numpy
 scikit-learn
-tensorflow-cpu
+xgboost
 joblib
 openpyxl
+
 

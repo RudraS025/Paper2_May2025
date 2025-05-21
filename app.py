@@ -2,13 +2,11 @@ from flask import Flask, request, jsonify, render_template
 import pandas as pd
 import joblib
 import numpy as np
-import tensorflow as tf
 
 app = Flask(__name__)
 
-# Load model and scaler
-model = tf.keras.models.load_model('my_model.h5', compile=False)
-scaler = joblib.load('scaler.save')
+# Load pipeline
+pipeline = joblib.load('xgb_pipeline.save')
 
 # List of feature names in the correct order
 FEATURES = [
@@ -50,28 +48,19 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    # Get JSON data from request
     data = request.get_json()
     df = pd.DataFrame(data)
-
-    print("Received columns:", df.columns.tolist())
-    # Scale the features
-    X_scaled = scaler.transform(df)
-    # Predict
-    y_pred = model.predict(X_scaled).flatten()
-    # Return predictions as JSON
+    y_pred = pipeline.predict(df)
     return jsonify({'predictions': y_pred.tolist()})
 
 @app.route('/form', methods=['GET', 'POST'])
 def form():
     prediction = None
     if request.method == 'POST':
-        # Get values from form in the correct order
         try:
             input_data = [float(request.form.get(feat, 0)) for feat in FEATURES]
             arr = np.array([input_data])
-            arr_scaled = scaler.transform(arr)
-            pred = model.predict(arr_scaled)[0][0]
+            pred = pipeline.predict(arr)[0]
             prediction = round(float(pred), 2)
         except Exception as e:
             prediction = f"Error: {e}"
