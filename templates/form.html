@@ -3,56 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <title>OCC FOB (USD/ton) Forecast</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 600px; margin: auto; }
-        label { display: block; margin-top: 15px; }
-        input[type="number"] { width: 100%; padding: 8px; margin-top: 5px; }
-        button { margin-top: 20px; padding: 10px 20px; font-size: 16px; }
-        .result { margin-top: 30px; font-size: 20px; color: green; }
+        body { background: #f8f9fa; }
+        .container { max-width: 700px; margin: 40px auto; }
+        .card { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .form-label { font-weight: 500; }
+        .result { margin-top: 30px; font-size: 22px; color: #198754; }
+        .upload-label { margin-top: 10px; font-weight: 500; }
     </style>
+    <!-- SheetJS for Excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="container">
-    <h2>OCC FOB (USD/ton) Forecast</h2>
-    <form method="post">
-        <label>Mixed wastepaper FOB (USD/ton):<input type="number" step="any" name="Mixed wastepaper FOB (USD/ton)" required></label>
-        <label>US ISM, Manufacturing, Suppliers Delivery Index (thousand units):<input type="number" step="any" name="US ISM, Manufacturing, Suppliers Delivery Index (thousand units)" required></label>
-        <label>Paperboard mills  (NAICS = 32213); n.s.a. IP:<input type="number" step="any" name="Paperboard mills  (NAICS = 32213); n.s.a. IP" required></label>
-        <label>Paperboard container  (NAICS = 32221); n.s.a. IP:<input type="number" step="any" name="Paperboard container  (NAICS = 32221); n.s.a. IP" required></label>
-        <label>US Recovered Paper Exports ('000 tons):<input type="number" step="any" name="US Recovered Paper Exports ('000 tons)" required></label>
-        <label>US Kraft Paper Imports ('000 tons):<input type="number" step="any" name="US Kraft Paper Imports ('000 tons)" required></label>
-        <label>US Kraft Paper Exports (thousand tons):<input type="number" step="any" name="US Kraft Paper Exports (thousand tons)" required></label>
-        <label>Waste management SA (thousand units) - people:<input type="number" step="any" name="Waste management SA (thousand units) - people" required></label>
-        <label>Waste management NSA  (thousand units) - people:<input type="number" step="any" name="Waste management NSA  (thousand units) - people" required></label>
-        <label>waste collection sa  (thousand units) - people:<input type="number" step="any" name="waste collection sa  (thousand units) - people" required></label>
-        <label>waste collection nsa  (thousand units) - people:<input type="number" step="any" name="waste collection nsa  (thousand units) - people" required></label>
-        <label>solid waste collection  sa  (thousand units) - people:<input type="number" step="any" name="solid waste collection  sa  (thousand units) - people" required></label>
-        <label>solid waste collection nsa  (thousand units) - people:<input type="number" step="any" name="solid waste collection nsa  (thousand units) - people" required></label>
-        <label>Solid waste landfill SA  (thousand units) - people:<input type="number" step="any" name="Solid waste landfill SA  (thousand units) - people" required></label>
-        <label>Solid waste landfill NSA  (thousand units) - people:<input type="number" step="any" name="Solid waste landfill NSA  (thousand units) - people" required></label>
-        <label>materials recovery  SA  (thousand units):<input type="number" step="any" name="materials recovery  SA  (thousand units)" required></label>
-        <label>materials recovery NSA  (thousand units):<input type="number" step="any" name="materials recovery NSA  (thousand units)" required></label>
-        <label>Retail and food services sales, total:<input type="number" step="any" name="Retail and food services sales, total" required></label>
-        <label>Motor vehicle and parts dealers:<input type="number" step="any" name="Motor vehicle and parts dealers" required></label>
-        <label>Nonstore retailers:<input type="number" step="any" name="Nonstore retailers" required></label>
-        <label>Food and beverage stores:<input type="number" step="any" name="Food and beverage stores" required></label>
-        <label>General merchandise stores:<input type="number" step="any" name="General merchandise stores" required></label>
-        <label>Food services and drinking places:<input type="number" step="any" name="Food services and drinking places" required></label>
-        <label>Building mat. and garden equip. and supplies dealers:<input type="number" step="any" name="Building mat. and garden equip. and supplies dealers" required></label>
-        <label>Gasoline stations:<input type="number" step="any" name="Gasoline stations" required></label>
-        <label>Health and personal care stores:<input type="number" step="any" name="Health and personal care stores" required></label>
-        <label>Clothing and clothing access. stores:<input type="number" step="any" name="Clothing and clothing access. stores" required></label>
-        <label>Furniture, home furn, electronics, and appliance stores:<input type="number" step="any" name="Furniture, home furn, electronics, and appliance stores" required></label>
-        <label>Miscellaneous stores retailers:<input type="number" step="any" name="Miscellaneous stores retailers" required></label>
-        <label>Sporting goods, hobby, musical instrument, and book stores:<input type="number" step="any" name="Sporting goods, hobby, musical instrument, and book stores" required></label>
-        <button type="submit">Predict</button>
-    </form>
-    {% if prediction is defined %}
-        <div class="result">
-            <strong>Forecasted OCC FOB (USD/ton):</strong> {{ prediction }}
-        </div>
-    {% endif %}
+    <div class="card p-4">
+        <h2 class="mb-4 text-center">OCC FOB (USD/ton) Forecast</h2>
+        <form method="post" id="forecastForm">
+            <label class="upload-label">Upload Excel file (first row will be used):
+                <input type="file" id="excelFile" accept=".xlsx,.xls" class="form-control mb-3">
+            </label>
+            <div class="row g-3">
+                <!-- Form fields start -->
+                <div class="col-md-6">
+                    <label class="form-label">Mixed wastepaper FOB (USD/ton):
+                        <input type="number" step="any" name="Mixed wastepaper FOB (USD/ton)" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">US ISM, Manufacturing, Suppliers Delivery Index (thousand units):
+                        <input type="number" step="any" name="US ISM, Manufacturing, Suppliers Delivery Index (thousand units)" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Paperboard mills  (NAICS = 32213); n.s.a. IP:
+                        <input type="number" step="any" name="Paperboard mills  (NAICS = 32213); n.s.a. IP" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Paperboard container  (NAICS = 32221); n.s.a. IP:
+                        <input type="number" step="any" name="Paperboard container  (NAICS = 32221); n.s.a. IP" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">US Recovered Paper Exports ('000 tons):
+                        <input type="number" step="any" name="US Recovered Paper Exports ('000 tons)" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">US Kraft Paper Imports ('000 tons):
+                        <input type="number" step="any" name="US Kraft Paper Imports ('000 tons)" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">US Kraft Paper Exports (thousand tons):
+                        <input type="number" step="any" name="US Kraft Paper Exports (thousand tons)" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Waste management SA (thousand units) - people:
+                        <input type="number" step="any" name="Waste management SA (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Waste management NSA  (thousand units) - people:
+                        <input type="number" step="any" name="Waste management NSA  (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">waste collection sa  (thousand units) - people:
+                        <input type="number" step="any" name="waste collection sa  (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">waste collection nsa  (thousand units) - people:
+                        <input type="number" step="any" name="waste collection nsa  (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">solid waste collection  sa  (thousand units) - people:
+                        <input type="number" step="any" name="solid waste collection  sa  (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">solid waste collection nsa  (thousand units) - people:
+                        <input type="number" step="any" name="solid waste collection nsa  (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Solid waste landfill SA  (thousand units) - people:
+                        <input type="number" step="any" name="Solid waste landfill SA  (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Solid waste landfill NSA  (thousand units) - people:
+                        <input type="number" step="any" name="Solid waste landfill NSA  (thousand units) - people" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">materials recovery  SA  (thousand units):
+                        <input type="number" step="any" name="materials recovery  SA  (thousand units)" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">materials recovery NSA  (thousand units):
+                        <input type="number" step="any" name="materials recovery NSA  (thousand units)" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Retail and food services sales, total:
+                        <input type="number" step="any" name="Retail and food services sales, total" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Motor vehicle and parts dealers:
+                        <input type="number" step="any" name="Motor vehicle and parts dealers" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Nonstore retailers:
+                        <input type="number" step="any" name="Nonstore retailers" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Food and beverage stores:
+                        <input type="number" step="any" name="Food and beverage stores" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">General merchandise stores:
+                        <input type="number" step="any" name="General merchandise stores" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Food services and drinking places:
+                        <input type="number" step="any" name="Food services and drinking places" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Building mat. and garden equip. and supplies dealers:
+                        <input type="number" step="any" name="Building mat. and garden equip. and supplies dealers" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Gasoline stations:
+                        <input type="number" step="any" name="Gasoline stations" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Health and personal care stores:
+                        <input type="number" step="any" name="Health and personal care stores" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Clothing and clothing access. stores:
+                        <input type="number" step="any" name="Clothing and clothing access. stores" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Furniture, home furn, electronics, and appliance stores:
+                        <input type="number" step="any" name="Furniture, home furn, electronics, and appliance stores" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Miscellaneous stores retailers:
+                        <input type="number" step="any" name="Miscellaneous stores retailers" class="form-control" required>
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Sporting goods, hobby, musical instrument, and book stores:
+                        <input type="number" step="any" name="Sporting goods, hobby, musical instrument, and book stores" class="form-control" required>
+                    </label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary mt-4 w-100">Predict</button>
+        </form>
+        {% if prediction is defined %}
+            <div class="result text-center">
+                <strong>Forecasted OCC FOB (USD/ton):</strong> {{ prediction }}
+            </div>
+        {% endif %}
+    </div>
 </div>
+
+<script>
+// Excel upload and auto-fill
+const excelInput = document.getElementById('excelFile');
+const form = document.getElementById('forecastForm');
+
+excelInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, {type: 'array'});
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, {header:1});
+        if (json.length < 2) {
+            alert('Excel file must have at least one data row.');
+            return;
+        }
+        const headers = json[0];
+        const values = json[1];
+        // Fill form fields
+        for (let i = 0; i < headers.length; i++) {
+            const name = headers[i];
+            const value = values[i];
+            const input = form.querySelector(`[name="${name}"]`);
+            if (input) input.value = value;
+        }
+    };
+    reader.readAsArrayBuffer(file);
+});
+</script>
+
 </body>
 </html>
