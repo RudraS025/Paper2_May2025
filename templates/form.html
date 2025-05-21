@@ -6,49 +6,78 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #f8f9fa; }
-        .container { max-width: 700px; margin: 40px auto; }
-        .card { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        body { background: linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%); min-height: 100vh; }
+        .container { max-width: 900px; margin: 40px auto; }
+        .card { box-shadow: 0 4px 24px rgba(0,0,0,0.10); border-radius: 18px; }
         .form-label { font-weight: 500; }
-        .result { margin-top: 30px; font-size: 22px; color: #198754; }
+        .result-table { margin-top: 30px; font-size: 20px; }
         .upload-label { margin-top: 10px; font-weight: 500; }
+        .table thead { background: #6366f1; color: #fff; }
+        .table-striped > tbody > tr:nth-of-type(odd) { background-color: #f1f5f9; }
+        .date-input { min-width: 120px; }
+        .input-row { border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; margin-bottom: 10px; }
+        .input-row:last-child { border-bottom: none; }
+        .add-row-btn { margin-top: 10px; }
+        .remove-row-btn { color: #ef4444; cursor: pointer; margin-left: 10px; }
     </style>
-    <!-- SheetJS for Excel parsing -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="container">
-    <div class="card p-4">
+    <div class="card p-4 mt-4">
         <h2 class="mb-4 text-center">OCC FOB (USD/ton) Forecast</h2>
-        <form method="post" id="forecastForm">
-            <label class="upload-label">Upload Excel file (first row will be used):
+        {% if results %}
+        <div class="result-table">
+            <h4 class="text-center mb-3">Forecasted Results</h4>
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Forecasted OCC FOB (USD/ton)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in results %}
+                    <tr>
+                        <td>{{ row['date'] }}</td>
+                        <td>{{ row['forecast'] }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        <form method="post" id="forecastForm" enctype="multipart/form-data">
+            <label class="upload-label">Upload Excel file (first column: Date, then variables):
                 <input type="file" id="excelFile" accept=".xlsx,.xls" class="form-control mb-3">
             </label>
-            <div class="row g-3">
-                <!-- Dynamically generated form fields -->
-                {% for feature in features %}
-                <div class="col-md-6">
-                    <label class="form-label">{{ feature }}:
-                        <input type="number" step="any" name="{{ feature }}" class="form-control" required>
-                    </label>
+            <div id="inputRows">
+                <!-- Dynamic input rows -->
+                {% for i in range(5) %}
+                <div class="row g-3 input-row" data-row="{{ i }}">
+                    <div class="col-md-2">
+                        <label class="form-label">Date
+                            <input type="text" name="date_{{ i }}" class="form-control date-input" placeholder="YYYY-MM or Date">
+                        </label>
+                    </div>
+                    {% for feature in features %}
+                    <div class="col-md-2">
+                        <label class="form-label">{{ feature }}
+                            <input type="number" step="any" name="{{ feature }}_{{ i }}" class="form-control">
+                        </label>
+                    </div>
+                    {% endfor %}
                 </div>
                 {% endfor %}
             </div>
             <button type="submit" class="btn btn-primary mt-4 w-100">Predict</button>
         </form>
-        {% if prediction is defined %}
-            <div class="result text-center">
-                <strong>Forecasted OCC FOB (USD/ton):</strong> {{ prediction }}
-            </div>
-        {% endif %}
     </div>
 </div>
-
 <script>
-// Excel upload and auto-fill
+// Excel upload and auto-fill for up to 5 rows
 const excelInput = document.getElementById('excelFile');
 const form = document.getElementById('forecastForm');
-
 excelInput.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -63,18 +92,24 @@ excelInput.addEventListener('change', function(e) {
             return;
         }
         const headers = json[0];
-        const values = json[1];
-        // Fill form fields
-        for (let i = 0; i < headers.length; i++) {
-            const name = headers[i];
-            const value = values[i];
-            const input = form.querySelector(`[name="${name}"]`);
-            if (input) input.value = value;
+        for (let row = 1; row < Math.min(json.length, 6); row++) {
+            const values = json[row];
+            for (let i = 0; i < headers.length; i++) {
+                let name = headers[i];
+                let value = values[i];
+                if (i === 0) {
+                    // Date column
+                    const input = form.querySelector(`[name="date_${row-1}"]`);
+                    if (input) input.value = value;
+                } else {
+                    const input = form.querySelector(`[name="${name}_${row-1}"]`);
+                    if (input) input.value = value;
+                }
+            }
         }
     };
     reader.readAsArrayBuffer(file);
 });
 </script>
-
 </body>
 </html>

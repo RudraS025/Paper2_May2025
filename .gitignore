@@ -1,4 +1,6 @@
-*.save
+# .gitignore for ML project
+# Commented out '*.save' so model files can be committed for deployment
+# *.save
 *.xlsx
 __pycache__/
 *.pyc

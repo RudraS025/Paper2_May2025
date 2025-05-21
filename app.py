@@ -29,19 +29,38 @@ def predict():
 
 @app.route('/form', methods=['GET', 'POST'])
 def form():
-    prediction = None
+    results = None
     if request.method == 'POST':
         try:
-            input_data = [float(request.form.get(feat, 0)) for feat in important_features]
-            arr = np.array([input_data])
-            # Impute and log-transform
+            # Collect up to 5 rows of input
+            rows = []
+            for i in range(5):
+                date_val = request.form.get(f'date_{i}', '').strip()
+                row = []
+                empty = True
+                for feat in important_features:
+                    val = request.form.get(f'{feat}_{i}', '').strip()
+                    if val != '':
+                        empty = False
+                    row.append(val)
+                if not empty and date_val:
+                    rows.append({'date': date_val, 'values': row})
+            if not rows:
+                raise Exception('Please provide at least one row of input with date and all variables.')
+            # Prepare DataFrame for prediction
+            X = []
+            dates = []
+            for row in rows:
+                X.append([float(v) for v in row['values']])
+                dates.append(row['date'])
+            arr = np.array(X)
             arr_imputed = imputer.transform(arr)
             arr_log = log_transformer.transform(arr_imputed)
-            pred = pipeline.predict(arr_log)[0]
-            prediction = round(float(pred), 2)
+            preds = pipeline.predict(arr_log)
+            results = [ {'date': dates[i], 'forecast': round(float(preds[i]), 2)} for i in range(len(preds)) ]
         except Exception as e:
-            prediction = f"Error: {e}"
-    return render_template('form.html', prediction=prediction, features=important_features)
+            results = [{'date': '', 'forecast': f"Error: {e}"}]
+    return render_template('form.html', results=results, features=important_features)
 
 if __name__ == '__main__':
     app.run(debug=True)
