@@ -51,8 +51,17 @@ def form():
             X = []
             dates = []
             for row in rows:
+                # Convert Excel serial date to string if needed
+                date_val = row['date']
+                try:
+                    # Try to convert if it's a number (Excel serial date)
+                    if date_val and str(date_val).replace('.', '', 1).isdigit():
+                        # Excel's origin is 1899-12-30
+                        date_val = str(pd.to_datetime(float(date_val), origin='1899-12-30', unit='D').date())
+                except Exception:
+                    pass
                 X.append([float(v) for v in row['values']])
-                dates.append(row['date'])
+                dates.append(date_val)
             arr = np.array(X)
             arr_imputed = imputer.transform(arr)
             arr_log = log_transformer.transform(arr_imputed)
