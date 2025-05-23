@@ -98,9 +98,22 @@ excelInput.addEventListener('change', function(e) {
                 let name = headers[i];
                 let value = values[i];
                 if (i === 0) {
-                    // Date column
-                    const input = form.querySelector(`[name="date_${row-1}"]`);
-                    if (input) input.value = value;
+                    // Date column: convert Excel serial to readable date if needed
+                    let dateInput = form.querySelector(`[name="date_${row-1}"]`);
+                    if (dateInput) {
+                        if (!isNaN(value) && value !== '') {
+                            // Excel serial date to YYYY-MM-DD
+                            let jsDate = new Date(Math.round((value - 25569) * 86400 * 1000));
+                            // Format as YYYY-MM or YYYY-MM-DD
+                            let yyyy = jsDate.getUTCFullYear();
+                            let mm = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+                            let dd = String(jsDate.getUTCDate()).padStart(2, '0');
+                            // If day is 1, show only YYYY-MM, else show full date
+                            dateInput.value = (dd === '01') ? `${yyyy}-${mm}` : `${yyyy}-${mm}-${dd}`;
+                        } else {
+                            dateInput.value = value;
+                        }
+                    }
                 } else {
                     const input = form.querySelector(`[name="${name}_${row-1}"]`);
                     if (input) input.value = value;
